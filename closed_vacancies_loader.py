@@ -1,10 +1,12 @@
 import requests
+import psycopg2 as pg
+import psycopg2.extras as pgex
 
 import pickle
 import logging
-import datetime
+from _datetime import datetime
 import threading
-# import postgresql
+import json
 
 
 logging.basicConfig(filename='log.log', level=logging.INFO)
@@ -21,7 +23,7 @@ def logger_inf(msg: str):
     write INFO message into log file (append) with timestamp point
     :param msg: - message
     """
-    timestamp = datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+    timestamp = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
     logging.info(timestamp + '\t' + msg)
 
 
@@ -31,7 +33,7 @@ def logger_err(msg: str, ex: Exception):
     :param msg: - message
     :param ex: - exception message
     """
-    timestamp = datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+    timestamp = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
     logging.error(timestamp + '\t' + msg + '\t' + str(ex))
 
 
@@ -146,18 +148,49 @@ def get_close_vacancy_salary(salary_type: str) -> int:
 
 def get_close_vacancy_date() -> str:
     """
-    get close vacancy published date
+    get close vacancy published date in YYYY-MM-DD hh:mm:ss+TZ format
     """
     return close_vacancy_data['published_at']
 
 
-def get_close_vacancy_specializations(close_vacancy_id: int) -> list:
+def get_close_vacancy_specializations(close_vacancy_id: int) -> tuple:
     """
     get close vacancy specializations
     :param close_vacancy_id: - close vacancy id
-    :return: list of dicts, specializations with vacancy id as key
+    :return: list of unique tuples, specializations with vacancy id as key
     """
-    return [{close_vacancy_id: specialization['name']} for specialization in close_vacancy_data['specializations']]
+    return list(set(
+        [(close_vacancy_id, specialization['name']) for specialization in close_vacancy_data['specializations']]
+    ))
+
+
+def save_data_to_database(close_vacancies_specializations: list, close_vacancies: list):
+    """
+    save close vacancies data to databases
+    :param close_vacancies_specializations: - list of tuples [(vacancy_id, specialization)]
+    :param close_vacancies:  - list of tuples of vacancy data [((id, name, salary_from, salary_to, experience, published_at, json))]
+    """
+    with pg.connect(dbname='postgres', user='postgres', host='localhost', port='32773') as conn:
+        with conn.cursor() as cur:
+            insert_query = 'insert into close_vacancies_specializations ' \
+                           '(vacancy_id, vacancy_specialization) ' \
+                           'values %s'
+            pgex.execute_values(cur, insert_query, close_vacancies_specializations, page_size=100)
+        with conn.cursor() as cur:
+            insert_query = 'insert into close_vacancies ' \
+                           '(' \
+                           'vacancy_id, ' \
+                           'vacancy_name, ' \
+                           'vacancy_salary_from, ' \
+                           'vacancy_salary_to, ' \
+                           'vacancy_experience, ' \
+                           'vacancy_published_at, ' \
+                           'vacancy_raw_data' \
+                           ') ' \
+                           'values %s'
+            pgex.execute_values(cur, insert_query, close_vacancies, page_size=100)
+
+    conn.close()
 
 
 logger_inf('Start')
@@ -196,38 +229,35 @@ if close_vacancies_ids:
         for close_vacancy_id in close_vacancies_ids:
             close_vacancy_data = get_close_vacancy_from_hh(close_vacancy_id)
 
-            data = {
-                'id': close_vacancy_id,
-                'name': get_close_vacancy_name(),
-                'salary_from': get_close_vacancy_salary('from'),
-                'salary_to': get_close_vacancy_salary('to'),
-                'experience': get_experience_description(),
-                'published_at': get_close_vacancy_date()
-                # !!!!!!!!!!!
-                # data['json'] = close_vacancy_data
-            }
+            # data = (id, name, salary_from, salary_to, experience, published_at, json)
+            data = (
+                close_vacancy_id,
+                get_close_vacancy_name(),
+                get_close_vacancy_salary('from'),
+                get_close_vacancy_salary('to'),
+                get_experience_description(),
+                get_close_vacancy_date(),
+                json.dumps(close_vacancy_data, ensure_ascii=False)
+            )
 
             close_vacancies.append(data)
             close_vacancies_specializations.extend(get_close_vacancy_specializations(close_vacancy_id))
 
-        print(close_vacancies)
-        print(close_vacancies_specializations)
-
         logger_inf('1: Save closed vacancies data into database')
-        # save _to_db
 
+        save_data_to_database(close_vacancies_specializations, close_vacancies)
 
         logger_inf('Save open vacancies into file')
+
         with open('data.open_vacancies_ids', 'wb') as data_new:
             pickle.dump(list(sovi), data_new)
 
-            logger_inf('Closed vacancies count: ' + str(len(close_vacancies_ids)))
+        logger_inf('Closed vacancies count: ' + str(len(close_vacancies_ids)))
 
-    # except saveDB:
-
+    except pg.DatabaseError as e:
+        logger_err('Error with database: ', e)
     except IOError as e:
         logger_err('1: IOError saved open vacancies ids in file: ', e)
-
     except Exception as e:
         logger_err('Error close vacancies data processing: ', e)
 else:
