@@ -4,7 +4,7 @@ import pickle
 import logging
 import datetime
 import threading
-import postgresql
+# import postgresql
 
 
 logging.basicConfig(filename='log.log', level=logging.INFO)
