@@ -1,0 +1,5 @@
+# local data files
+data.*
+
+# local log files
+*.log
