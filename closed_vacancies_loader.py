@@ -17,16 +17,30 @@ close_vacancies_specializations = []
 
 
 def logger_inf(msg: str):
+    """
+    write INFO message into log file (append) with timestamp point
+    :param msg: - message
+    """
     timestamp = datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S')
     logging.info(timestamp + '\t' + msg)
 
 
 def logger_err(msg: str, ex: Exception):
+    """
+    write ERROR message into log file (append) with timestamp point
+    :param msg: - message
+    :param ex: - exception message
+    """
     timestamp = datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S')
     logging.error(timestamp + '\t' + msg + '\t' + str(ex))
 
 
 def get_metro_from_hh(city_id: int) -> list:
+    """
+    get metro stations ids from api.hh
+    :param city_id: - id of Saint-Petersburg city by api.hh dictionary
+    :return: list of metro stations ids
+    """
     url = 'https://api.hh.ru/metro/' + str(city_id)
     request = requests.get(url).json()
 
@@ -38,6 +52,11 @@ def get_metro_from_hh(city_id: int) -> list:
 
 
 def get_open_vacancies_from_hh(metro_id: str) -> list:
+    """
+    get open vacancies from api.hh for metro station
+    :param metro_id: - metro stations id
+    :return: - list of open vacancies ids
+    """
     rows_count = rows_on_page = 100
     page = 0
     vacancies = []
@@ -63,10 +82,19 @@ def get_open_vacancies_from_hh(metro_id: str) -> list:
 
 
 def get_close_vacancy_from_hh(close_vacancy_id: int) -> object:
+    """
+    get vacancy data from api.hh by vacancy id (using for get close vacancy by its id)
+    :param close_vacancy_id: - close vacancy id
+    :return: - vacancy data in json format
+    """
     return requests.get('https://api.hh.ru/vacancies/' + str(close_vacancy_id)).json()
 
 
 def get_experience_description() -> str:
+    """
+    get experience description from api.hh and normalise its name by categories
+    :return: - experience category name
+    """
     experience = close_vacancy_data['experience']['id']
     return {
         experience == 'noExperience': 'junior',
@@ -77,10 +105,17 @@ def get_experience_description() -> str:
 
 
 def get_close_vacancy_name() -> str:
+    """
+    get close vacancy name
+    """
     return close_vacancy_data['name']
 
 
 def get_conversion_multiplications() -> float:
+    """
+    get conversion multiplier for convert vacancy salary from its currency to RUR
+    and deducts tax if vacancy has [gross] attribute is true
+    """
     currency = close_vacancy_data['salary']['currency']
     gross = close_vacancy_data['salary']['gross']
     return {
@@ -94,6 +129,10 @@ def get_conversion_multiplications() -> float:
 
 
 def get_close_vacancy_salary(salary_type: str) -> int:
+    """
+    calculate vacancy salary with conversion multiplier and rounding up to a whole
+    :param salary_type: - one of ('from', 'to') salary type. 'from' type is min salary and 'to' type is max salary.
+    """
     if close_vacancy_data['salary'] is not None:
         if salary_type == 'from' and close_vacancy_data['salary']['from'] is not None:
             return int(close_vacancy_data['salary']['from'] * get_conversion_multiplications())
@@ -106,10 +145,18 @@ def get_close_vacancy_salary(salary_type: str) -> int:
 
 
 def get_close_vacancy_date() -> str:
+    """
+    get close vacancy published date
+    """
     return close_vacancy_data['published_at']
 
 
 def get_close_vacancy_specializations(close_vacancy_id: int) -> list:
+    """
+    get close vacancy specializations
+    :param close_vacancy_id: - close vacancy id
+    :return: list of dicts, specializations with vacancy id as key
+    """
     return [{close_vacancy_id: specialization['name']} for specialization in close_vacancy_data['specializations']]
 
 
