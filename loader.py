@@ -163,7 +163,7 @@ def loader():
         :param close_vacancies_specializations: - list of tuples [(vacancy_id, specialization)]
         :param close_vacancies:  - list of tuples of vacancy data [((id, name, salary_from, salary_to, experience, published_at, json))]
         """
-        with pg.connect(dbname='postgres', user='postgres', host='localhost', port='5432') as conn:
+        with pg.connect(dbname='postgres', user='postgres', host='db', port='5432') as conn:
             with conn.cursor() as cur:
                 insert_query = 'insert into close_vacancies_specializations ' \
                                '(vacancy_id, vacancy_specialization) ' \
