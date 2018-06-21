@@ -170,7 +170,7 @@ def save_data_to_database(close_vacancies_specializations: list, close_vacancies
     :param close_vacancies_specializations: - list of tuples [(vacancy_id, specialization)]
     :param close_vacancies:  - list of tuples of vacancy data [((id, name, salary_from, salary_to, experience, published_at, json))]
     """
-    with pg.connect(dbname='postgres', user='postgres', host='localhost', port='32773') as conn:
+    with pg.connect(dbname='postgres', user='postgres', host='localhost', port='5432') as conn:
         with conn.cursor() as cur:
             insert_query = 'insert into close_vacancies_specializations ' \
                            '(vacancy_id, vacancy_specialization) ' \
@@ -193,80 +193,84 @@ def save_data_to_database(close_vacancies_specializations: list, close_vacancies
     conn.close()
 
 
-logger_inf('Start')
+def loader():
+    """
+    entrypoint for closed_vacancies_loader
+    """
+    logger_inf('Start')
 
-for metro in get_metro_from_hh(2):
-    t = threading.Thread(target=open_vacancies_ids.extend(get_open_vacancies_from_hh(metro)))
-    threads.append(t)
-    t.start()
+    for metro in get_metro_from_hh(2):
+        t = threading.Thread(target=open_vacancies_ids.extend(get_open_vacancies_from_hh(metro)))
+        threads.append(t)
+        t.start()
 
-for t in threads:
-    t.join()
+    for t in threads:
+        t.join()
 
-logger_inf('Received all open vacancies')
+    logger_inf('Received all open vacancies')
 
-sovi = set(open_vacancies_ids)
+    sovi = set(open_vacancies_ids)
 
-try:
-    with open('data.open_vacancies_ids', 'rb') as data_old:
-        open_vacancies_ids_old = pickle.load(data_old)
-    close_vacancies_ids = [vacancy_id for vacancy_id in open_vacancies_ids_old if vacancy_id not in sovi]
-except IOError as e:
-    logger_err('Can not load saved old open vacancies file: ', e)
-
-
-# ---------------------------------------
-if not close_vacancies_ids:
-    close_vacancies_ids.append(23696436)
-    # salary test
-    # close_vacancies_ids.append(26449543)
-# ---------------------------------------
-
-if close_vacancies_ids:
     try:
-        logger_inf('Closed vacancies data processing')
-
-        for close_vacancy_id in close_vacancies_ids:
-            close_vacancy_data = get_close_vacancy_from_hh(close_vacancy_id)
-
-            # data = (id, name, salary_from, salary_to, experience, published_at, json)
-            data = (
-                close_vacancy_id,
-                get_close_vacancy_name(),
-                get_close_vacancy_salary('from'),
-                get_close_vacancy_salary('to'),
-                get_experience_description(),
-                get_close_vacancy_date(),
-                json.dumps(close_vacancy_data, ensure_ascii=False)
-            )
-
-            close_vacancies.append(data)
-            close_vacancies_specializations.extend(get_close_vacancy_specializations(close_vacancy_id))
-
-        logger_inf('1: Save closed vacancies data into database')
-
-        save_data_to_database(close_vacancies_specializations, close_vacancies)
-
-        logger_inf('Save open vacancies into file')
-
-        with open('data.open_vacancies_ids', 'wb') as data_new:
-            pickle.dump(list(sovi), data_new)
-
-        logger_inf('Closed vacancies count: ' + str(len(close_vacancies_ids)))
-
-    except pg.DatabaseError as e:
-        logger_err('Error with database: ', e)
+        with open('/tmp/get-closed-vacancies-on-hh/data.open_vacancies_ids', 'rb') as data_old:
+            open_vacancies_ids_old = pickle.load(data_old)
+        close_vacancies_ids = [vacancy_id for vacancy_id in open_vacancies_ids_old if vacancy_id not in sovi]
     except IOError as e:
-        logger_err('1: IOError saved open vacancies ids in file: ', e)
-    except Exception as e:
-        logger_err('Error close vacancies data processing: ', e)
-else:
-    try:
-        logger_inf('2: Save open vacancies into file')
-        with open('data.open_vacancies_ids', 'wb') as data_new:
-            pickle.dump(list(sovi), data_new)
-            logger_inf('No closed vacancies')
-    except IOError as e:
-        logger_err('2: IOError saved open vacancies ids in file: ', e)
+        logger_err('Can not load saved old open vacancies file: ', e)
 
-logger_inf('Finish')
+
+    # ---------------------------------------
+    if not close_vacancies_ids:
+        close_vacancies_ids.append(23696436)
+        # salary test
+        # close_vacancies_ids.append(26449543)
+    # ---------------------------------------
+
+    if close_vacancies_ids:
+        try:
+            logger_inf('Closed vacancies data processing')
+
+            for close_vacancy_id in close_vacancies_ids:
+                close_vacancy_data = get_close_vacancy_from_hh(close_vacancy_id)
+
+                # data = (id, name, salary_from, salary_to, experience, published_at, json)
+                data = (
+                    close_vacancy_id,
+                    get_close_vacancy_name(),
+                    get_close_vacancy_salary('from'),
+                    get_close_vacancy_salary('to'),
+                    get_experience_description(),
+                    get_close_vacancy_date(),
+                    json.dumps(close_vacancy_data, ensure_ascii=False)
+                )
+
+                close_vacancies.append(data)
+                close_vacancies_specializations.extend(get_close_vacancy_specializations(close_vacancy_id))
+
+            logger_inf('1: Save closed vacancies data into database')
+
+            save_data_to_database(close_vacancies_specializations, close_vacancies)
+
+            logger_inf('Save open vacancies into file')
+
+            with open('/tmp/get-closed-vacancies-on-hh/data.open_vacancies_ids', 'wb') as data_new:
+                pickle.dump(list(sovi), data_new)
+
+            logger_inf('Closed vacancies count: ' + str(len(close_vacancies_ids)))
+
+        except pg.DatabaseError as e:
+            logger_err('Error with database: ', e)
+        except IOError as e:
+            logger_err('1: IOError saved open vacancies ids in file: ', e)
+        except Exception as e:
+            logger_err('Error close vacancies data processing: ', e)
+    else:
+        try:
+            logger_inf('2: Save open vacancies into file')
+            with open('/tmp/get-closed-vacancies-on-hh/data.open_vacancies_ids', 'wb') as data_new:
+                pickle.dump(list(sovi), data_new)
+                logger_inf('No closed vacancies')
+        except IOError as e:
+            logger_err('2: IOError saved open vacancies ids in file: ', e)
+
+    logger_inf('Finish')
