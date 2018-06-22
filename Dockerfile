@@ -9,10 +9,5 @@ RUN pip install schedule
 
 COPY . /loader
 
-ARG SCHEDULE_MINUTES_INTERVAL=1
 ENV SCHEDULE_MINUTES_INTERVAL=1
-
-CMD ["sh", "-c", "echo ${SCHEDULE_MINUTES_INTERVAL}"]
-
-ENTRYPOINT ["python", "scheduler.py", "$SCHEDULE_MINUTES_INTERVAL"]
-#CMD ["python", "scheduler.py", "$SCHEDULE_MINUTES_INTERVAL"]
+CMD ["sh", "-c", "python", "scheduler.py", "$SCHEDULE_MINUTES_INTERVAL"]
