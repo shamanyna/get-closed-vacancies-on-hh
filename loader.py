@@ -207,14 +207,6 @@ def loader():
     except IOError as e:
         logger_err('Can not load saved old open vacancies file: ', e)
 
-
-    # ---------------------------------------
-    if not close_vacancies_ids:
-        close_vacancies_ids.append(23696436)
-        # salary test
-        # close_vacancies_ids.append(26449543)
-    # ---------------------------------------
-
     if close_vacancies_ids:
         try:
             logger_inf('Closed vacancies data processing')
