@@ -7,6 +7,7 @@ create table if not exists close_vacancies
   vacancy_salary_to integer,
   vacancy_experience varchar(6),
   vacancy_published_at timestamptz,
+  vacancy_published_at timestamptz default current_timestamp,
   vacancy_raw_data json
 );
 
