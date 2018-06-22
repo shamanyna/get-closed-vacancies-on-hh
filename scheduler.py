@@ -7,8 +7,8 @@ def job():
     loader()
 
 
-schedule.every(2).minutes.do(job)
+schedule.every(60).seconds.do(job)
 
 while True:
     schedule.run_pending()
-    time.sleep(30)
+    time.sleep(1)
