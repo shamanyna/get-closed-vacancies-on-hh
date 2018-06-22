@@ -10,7 +10,7 @@ services:
           - db
         environment:
             DATABASE_HOST: db
-            - SCHEDULE_MINUTES_INTERVAL
+            SCHEDULE_MINUTES_INTERVAL:
 
     db:
         image: "postgres:latest"
