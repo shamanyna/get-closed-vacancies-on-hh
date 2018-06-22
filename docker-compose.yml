@@ -9,7 +9,7 @@ services:
         links:
           - db
         environment:
-            - DATABASE_HOST: db
+            DATABASE_HOST: db
             - SCHEDULE_MINUTES_INTERVAL
 
     db:
