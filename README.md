@@ -27,9 +27,7 @@ in database create two tables:
 
 vacancies data database located on host in ./postgresql/data folder
 
-loader service execute with scheduler in minutes interval
-default interval = 1 minute
-the interval can be specified as the environment variable at startup:
+loader service execute with scheduler in minutes interval, the default interval = 1 minute, the interval can be specified as the environment variable at startup:
 
 example of default behavior:
 - docker-compose up --build
