@@ -8,4 +8,6 @@ RUN pip install psycopg2
 RUN pip install schedule
 
 COPY . /loader
-CMD ["python", "scheduler.py", "2"]
+
+ENV SCHEDULE_MINUTES_INTERVAL 1
+CMD ["python", "scheduler.py", "${SCHEDULE_MINUTES_INTERVAL}"]
