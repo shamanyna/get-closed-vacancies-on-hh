@@ -4,7 +4,7 @@ import time
 from loader import loader
 
 if len(sys.argv) > 1:
-    schedule_interval = sys.argv[1]
+    schedule_interval = int(sys.argv[1])
 else:
     schedule_interval = 1
 
