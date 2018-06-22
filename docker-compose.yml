@@ -5,7 +5,7 @@ services:
     app:
         build: .
         volumes:
-            - ./loader/data:/loader/loader/data
+            - ${LOADER_DATA_PATH}:/loader/loader/data
         links:
           - db
         environment:
@@ -17,4 +17,4 @@ services:
             - "5432:5432"
         volumes:
             - ./init.sql:/docker-entrypoint-initdb.d/1-init.sql
-            - ./postgresql/data:/var/lib/postgresql/data
+            - ${DATABASE_DATA_PATH}:/var/lib/postgresql/data
