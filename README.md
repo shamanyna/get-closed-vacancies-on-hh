@@ -25,6 +25,8 @@ in database create two tables:
     - vacancy_closed_at, -- date close vacancy (as date save to database)
     - vacancy_raw_data -- raw vacancy data as json
 
+vacancies data database located in host in ./postgresql/data folder
+
 loader service execute with scheduler in minutes interval
 default interval = 1 minute
 the interval can be specified as the environment variable at startup:
