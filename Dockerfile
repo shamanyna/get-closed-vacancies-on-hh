@@ -10,4 +10,4 @@ RUN pip install schedule
 COPY . /loader
 
 ENV SCHEDULE_MINUTES_INTERVAL=1
-CMD ["sh", "-c", "python", "scheduler.py", "1"]
+CMD "python", "scheduler.py", "1"
